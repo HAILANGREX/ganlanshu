@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>《橄榄树》- 齐豫 | 典藏黑胶唱机</title>
+    <title>《橄榄树》- 齐豫 | 典藏视听版</title>
     <style>
         /* 全局样式与重置 */
         body, html {
@@ -11,23 +11,21 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background-color: #08080a;
             font-family: "STSong", "SimSun", "Times New Roman", serif;
-            color: #f4ecd8;
+            color: #e0e5df;
+            /* 优化：平滑的深色系流体渐变，去除了纯黑色，过渡更自然 */
+            background: linear-gradient(120deg, #10151a, #161e1a, #1a1920, #0f1618);
+            background-size: 300% 300%;
+            animation: smoothBg 18s ease infinite;
         }
 
-        /* 背景画布 */
-        #particle-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
+        @keyframes smoothBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* 居中主容器 */
+        /* 主容器 */
         .container {
             position: relative;
             z-index: 1;
@@ -36,77 +34,151 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: radial-gradient(circle at 50% 40%, rgba(50, 42, 35, 0.7) 0%, rgba(10, 10, 12, 1) 90%);
+            perspective: 1200px;
         }
 
-        /* --- 拟物化唱机底座 --- */
+        /* 中心持续发出的音波波纹容器 */
+        .ripple-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60px); 
+            z-index: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        .is-playing ~ .ripple-container {
+            display: block;
+        }
+
+        .ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(216, 206, 179, 0.3); /* 香槟金 */
+            box-shadow: 0 0 40px rgba(216, 206, 179, 0.1);
+            opacity: 0;
+            animation: rippleEffect 8s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+
+        .ripple:nth-child(1) { width: 260px; height: 260px; animation-delay: 0s; }
+        .ripple:nth-child(2) { width: 260px; height: 260px; animation-delay: 2.6s; }
+        .ripple:nth-child(3) { width: 260px; height: 260px; animation-delay: 5.2s; }
+
+        @keyframes rippleEffect {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+        }
+
+        /* 新增：鼠标/触屏点击生成的交互式水波纹 */
+        .interactive-ripple {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 2px solid rgba(216, 206, 179, 0.6);
+            box-shadow: 0 0 20px rgba(216, 206, 179, 0.3), inset 0 0 15px rgba(216, 206, 179, 0.2);
+            transform: translate(-50%, -50%) scale(0.1);
+            animation: clickWaterRipple 2.5s cubic-bezier(0.1, 0.5, 0.3, 1) forwards;
+            pointer-events: none;
+            z-index: 15; /* 位于唱机上方，粒子下方 */
+        }
+
+        @keyframes clickWaterRipple {
+            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; border-width: 2px; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; border-width: 0px; }
+        }
+
+        /* --- 唱机外壳 --- */
+        .turntable-wrapper {
+            position: relative;
+            z-index: 10;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            animation: float 8s ease-in-out infinite; 
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
         .turntable-deck {
             position: relative;
-            background: linear-gradient(145deg, #2a2723, #141311);
-            border-radius: 12px;
-            padding: 35px 30px 45px 30px;
-            border: 1px solid #3a362f;
-            border-top-color: #4f4a41;
+            background: linear-gradient(145deg, #181a1c, #090a0b); 
+            border-radius: 20px;
+            padding: 40px 30px 45px 30px;
+            border: 1px solid #222629;
+            border-top-color: #31363a;
             box-shadow: 
-                0 30px 60px rgba(0,0,0,0.9),
-                inset 0 1px 2px rgba(255,255,255,0.1),
-                inset 0 -5px 15px rgba(0,0,0,0.8);
+                0 50px 100px rgba(0,0,0,0.9),
+                0 0 60px rgba(10, 15, 20, 0.5),
+                inset 0 1px 2px rgba(255,255,255,0.08),
+                inset 0 -5px 20px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 320px;
+            width: 330px;
+            transform: translateZ(30px);
+            transition: box-shadow 1.5s ease;
         }
 
-        /* 唱机金属边缘装饰 */
-        .turntable-deck::before {
-            content: '';
-            position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border: 1px solid rgba(212, 175, 55, 0.15); /* 暗金色内边框 */
-            border-radius: 8px;
-            pointer-events: none;
+        .turntable-deck.is-playing {
+            box-shadow: 
+                0 50px 100px rgba(0,0,0,0.9),
+                0 0 80px rgba(142, 155, 133, 0.1), 
+                inset 0 1px 2px rgba(255,255,255,0.08),
+                inset 0 -5px 20px rgba(0,0,0,0.8);
         }
 
-        /* --- 唱片托盘与黑胶 --- */
+        /* --- 唱片托盘 --- */
         .platter {
             position: relative;
-            width: 260px;
-            height: 260px;
+            width: 270px;
+            height: 270px;
             border-radius: 50%;
-            background: linear-gradient(145deg, #1f1f1f, #0a0a0a);
+            background: linear-gradient(145deg, #121314, #030404);
             box-shadow: 
-                0 15px 25px rgba(0,0,0,0.8), 
-                inset 0 2px 4px rgba(255,255,255,0.05);
+                0 15px 30px rgba(0,0,0,0.95), 
+                inset 0 2px 4px rgba(255,255,255,0.04);
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 40px;
-            margin-top: 10px;
+            margin-bottom: 45px;
+            margin-top: 5px;
+            transform: translateZ(10px);
         }
 
-        /* 黑胶唱片本体 (带凹槽纹理) */
         .vinyl-record {
             position: relative;
-            width: 240px;
-            height: 240px;
+            width: 250px;
+            height: 250px;
             border-radius: 50%;
-            background-color: #050505;
+            background-color: #020202;
             background-image: repeating-radial-gradient(
                 circle at center,
-                #111 0,
-                #111 1px,
-                #050505 2px,
-                #050505 4px
+                #0d0d0d 0,
+                #0d0d0d 1px,
+                #020202 2px,
+                #020202 4px
             );
-            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+            box-shadow: inset 0 0 25px rgba(0,0,0,1);
             display: flex;
             justify-content: center;
             align-items: center;
             animation: spin 6s linear infinite;
             animation-play-state: paused;
+            transition: filter 1s ease;
         }
 
-        /* 黑胶高光反射层 */
+        .turntable-deck.is-playing .vinyl-record {
+            filter: drop-shadow(0 0 15px rgba(216, 206, 179, 0.15));
+        }
+
         .vinyl-record::after {
             content: '';
             position: absolute;
@@ -115,30 +187,29 @@
             background: conic-gradient(
                 from 30deg, 
                 rgba(255,255,255,0) 0%, 
-                rgba(255,255,255,0.15) 10%, 
+                rgba(255,255,255,0.08) 10%, 
                 rgba(255,255,255,0) 25%, 
                 rgba(255,255,255,0) 50%, 
-                rgba(255,255,255,0.15) 60%, 
+                rgba(255,255,255,0.08) 60%, 
                 rgba(255,255,255,0) 75%
             );
             pointer-events: none;
         }
 
-        /* 专辑封面标签 */
         .vinyl-label {
             position: relative;
             width: 90px;
             height: 90px;
             border-radius: 50%;
+            background: linear-gradient(135deg, #182025, #0c1012);
             background-image: url('2727510fd9f9d72a76ced868d42a2834359bbb8c.jpg');
             background-size: cover;
             background-position: center;
-            border: 2px solid #1a1a1a;
-            box-shadow: 0 0 0 3px #000;
+            border: 2px solid #0a0a0a;
+            box-shadow: 0 0 0 4px #000;
             z-index: 2;
         }
 
-        /* 中心金属主轴 */
         .spindle {
             position: absolute;
             top: 50%;
@@ -146,368 +217,381 @@
             transform: translate(-50%, -50%);
             width: 14px;
             height: 14px;
-            background: radial-gradient(circle at 4px 4px, #f0f0f0, #999, #444);
+            background: radial-gradient(circle at 4px 4px, #d0d0d0, #666, #111);
             border-radius: 50%;
-            box-shadow: 
-                3px 3px 6px rgba(0,0,0,0.8),
-                inset 0 -1px 2px rgba(0,0,0,0.5);
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(0,0,0,0.6);
             z-index: 5;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* --- 拟物化唱臂与指针 --- */
+        /* --- 唱臂 --- */
         .tonearm-container {
             position: absolute;
-            top: 35px;
+            top: 40px;
             right: 15px;
             width: 80px;
             height: 220px;
-            transform-origin: 40px 40px; /* 旋转轴心点在基座中心 */
-            transform: rotate(-35deg); /* 默认暂停时抬起并在最外侧 */
-            transition: transform 0.8s cubic-bezier(0.5, 0, 0.2, 1); 
+            transform-origin: 40px 40px;
+            transform: rotate(-35deg); 
+            transition: transform 1.2s cubic-bezier(0.3, 0, 0.1, 1); 
             z-index: 10;
         }
 
-        /* 底部巨大轴承基座 */
         .tonearm-base {
             position: absolute;
             top: 10px; left: 10px;
             width: 60px; height: 60px;
             border-radius: 50%;
-            background: radial-gradient(circle at 20px 20px, #444, #1a1a1a);
-            box-shadow: 
-                0 10px 20px rgba(0,0,0,0.8),
-                inset 0 2px 3px rgba(255,255,255,0.1);
+            background: radial-gradient(circle at 20px 20px, #2a3035, #050608);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.9), inset 0 2px 3px rgba(255,255,255,0.08);
         }
 
-        /* 上层黄铜旋转轴心 */
         .tonearm-pivot {
             position: absolute;
             top: 22px; left: 22px;
             width: 36px; height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #e8c678, #8a7323, #4a3d13);
-            box-shadow: 
-                0 4px 8px rgba(0,0,0,0.8),
-                inset 0 1px 2px rgba(255,255,255,0.6);
+            background: linear-gradient(135deg, #beb496, #807659, #332f22);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.9), inset 0 1px 3px rgba(255,255,255,0.4);
         }
 
-        /* 尾部金属配重锤 */
         .tonearm-counterweight {
             position: absolute;
-            top: -12px; left: 30px;
-            width: 20px; height: 35px;
-            background: linear-gradient(90deg, #ccc, #fff, #888, #444);
+            top: -15px; left: 30px;
+            width: 20px; height: 38px;
+            background: linear-gradient(90deg, #555, #999, #333, #0a0a0a);
             border-radius: 3px;
-            box-shadow: 5px 15px 15px rgba(0,0,0,0.6);
+            box-shadow: 5px 15px 15px rgba(0,0,0,0.7);
         }
 
-        /* 修长的主唱臂杆 */
         .tonearm-rod {
             position: absolute;
             top: 40px; left: 36px;
-            width: 8px; height: 140px;
-            background: linear-gradient(90deg, #b0b0b0, #ffffff, #666666);
+            width: 8px; height: 145px;
+            background: linear-gradient(90deg, #777, #cccccc, #333);
             border-radius: 4px;
-            box-shadow: 10px 10px 15px rgba(0,0,0,0.6);
+            box-shadow: 12px 12px 15px rgba(0,0,0,0.8);
         }
 
-        /* 弯曲连接处 (视觉过渡) */
         .tonearm-curve {
             position: absolute;
-            top: 175px; left: 33px;
+            top: 180px; left: 32px;
             width: 14px; height: 18px;
-            background: linear-gradient(135deg, #555, #222);
+            background: linear-gradient(135deg, #333, #050505);
             border-radius: 2px;
-            transform: rotate(20deg);
-            box-shadow: 6px 6px 10px rgba(0,0,0,0.5);
+            transform: rotate(22deg);
+            box-shadow: 8px 8px 10px rgba(0,0,0,0.7);
         }
 
-        /* 唱头与唱针 */
         .tonearm-head {
             position: absolute;
-            top: 188px; left: 21px;
-            width: 20px; height: 36px;
-            background: linear-gradient(145deg, #d4af37, #8a7323); /* 纯金质感唱头 */
+            top: 194px; left: 19px;
+            width: 22px; height: 38px;
+            background: linear-gradient(145deg, #d4c7a3, #7a7051); 
             border-radius: 2px;
-            transform: rotate(20deg);
-            box-shadow: 8px 12px 15px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.4);
-            display: flex;
-            justify-content: center;
+            transform: rotate(22deg);
+            box-shadow: 10px 15px 18px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.3);
         }
 
-        /* 微型唱针 */
-        .tonearm-stylus {
-            position: absolute;
-            bottom: -3px;
-            width: 4px;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 0 0 2px 2px;
-        }
+        .turntable-deck.is-playing .tonearm-container { transform: rotate(16deg); }
 
-        /* 当播放时的动画状态 */
-        .turntable-deck.is-playing .vinyl-record {
-            animation-play-state: running;
-        }
-
-        .turntable-deck.is-playing .tonearm-container {
-            transform: rotate(12deg); /* 针尖正好落在黑色音轨区域 */
-        }
-
-        /* --- 信息面板与控制器 --- */
+        /* --- 毛玻璃质感信息面板 --- */
         .info-plate {
-            background: linear-gradient(180deg, #1e1b18, #0f0d0b);
-            border: 1px solid #2e2a25;
-            border-top: 1px solid #111;
-            border-bottom: 1px solid #444;
-            padding: 15px 30px;
-            border-radius: 6px;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,1), 0 2px 0 rgba(255,255,255,0.05);
+            background: rgba(20, 25, 30, 0.35); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 22px 25px 18px 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             text-align: center;
             width: 85%;
             margin-bottom: 25px;
+            position: relative;
+            transform: translateZ(15px);
         }
 
         .song-title {
-            font-size: 22px;
-            letter-spacing: 4px;
+            font-size: 24px;
+            letter-spacing: 5px;
             margin: 0 0 8px 0;
-            color: #e8c678; /* 暗金色 */
-            text-shadow: 0 2px 2px rgba(0,0,0,1);
+            color: #d8ceb3; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
             font-weight: normal;
         }
 
         .artist {
-            font-size: 14px;
-            color: #8c8173;
+            font-size: 12px;
+            color: #8a969f;
             letter-spacing: 2px;
-            text-shadow: 0 1px 1px rgba(0,0,0,1);
+            margin-bottom: 18px;
         }
 
-        /* 状态指示灯 */
+        /* 连续波形示波器 */
+        .wave-container {
+            width: 100%;
+            height: 35px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        #wave-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            mix-blend-mode: screen;
+        }
+
+        /* 状态指示灯与文字 */
         .status-light {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 20px;
+            gap: 10px;
+            font-size: 14px;
+            color: #667580;
+            margin-bottom: 25px;
+            transform: translateZ(10px);
+            letter-spacing: 2px;
+            transition: all 0.3s;
         }
 
         .led {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #330000;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-            transition: all 0.3s;
+            background: #11181d;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.05);
+            transition: all 0.6s ease;
         }
 
         .turntable-deck.is-playing .led {
-            background: #ff3333;
-            box-shadow: 0 0 10px #ff3333, inset 0 1px 2px rgba(255,255,255,0.5);
+            background: #d8ceb3; 
+            box-shadow: 0 0 10px #d8ceb3, 0 0 20px rgba(216, 206, 179, 0.5), inset 0 1px 2px #fff;
         }
         
+        /* 优化：播放时的文字颜色与波形图保持一致，更显眼 */
         .turntable-deck.is-playing .status-light-text {
-            color: #a0a0a0;
+            color: #d8ceb3;
+            text-shadow: 0 0 10px rgba(216, 206, 179, 0.5);
+            font-weight: bold;
         }
 
-        /* 拟物金属按钮 */
+        /* 操作按钮 */
         .action-btn {
-            background: linear-gradient(180deg, #3a3630, #221f1b);
-            color: #d4af37;
-            border: 1px solid #111;
-            border-top: 1px solid #555;
-            padding: 12px 40px;
-            border-radius: 4px;
-            font-size: 16px;
+            background: rgba(30, 35, 40, 0.6); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #9ba7b0;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 14px 50px;
+            border-radius: 8px;
+            font-size: 15px;
             font-family: inherit;
-            letter-spacing: 3px;
+            letter-spacing: 6px;
             cursor: pointer;
-            box-shadow: 
-                0 6px 10px rgba(0,0,0,0.8),
-                inset 0 1px 2px rgba(255,255,255,0.1);
-            transition: all 0.1s;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             outline: none;
+            transform: translateZ(20px);
+        }
+
+        .action-btn:hover {
+            background: rgba(45, 52, 60, 0.8);
+            color: #e0e5df;
+            border-top: 1px solid rgba(255,255,255,0.2);
         }
 
         .action-btn:active {
-            transform: translateY(4px);
-            box-shadow: 
-                0 2px 4px rgba(0,0,0,0.8),
-                inset 0 2px 5px rgba(0,0,0,0.6);
-            border-top: 1px solid #222;
+            transform: translateZ(20px) translateY(3px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.8);
         }
 
     </style>
 </head>
 <body>
 
-    <!-- 粒子特效画布 -->
-    <canvas id="particle-canvas"></canvas>
-
-    <div class="container">
-        <!-- 唱机总底盘 -->
-        <div class="turntable-deck" id="turntable">
-            
-            <!-- 唱片机指针系统 -->
-            <div class="tonearm-container">
-                <div class="tonearm-base"></div>
-                <div class="tonearm-counterweight"></div>
-                <div class="tonearm-pivot"></div>
-                <div class="tonearm-rod"></div>
-                <div class="tonearm-curve"></div>
-                <div class="tonearm-head">
-                    <div class="tonearm-stylus"></div>
+    <div class="container" id="scene-container">
+        
+        <div class="turntable-wrapper" id="turntable-wrapper">
+            <!-- 唱机 -->
+            <div class="turntable-deck" id="turntable">
+                
+                <div class="tonearm-container">
+                    <div class="tonearm-base"></div>
+                    <div class="tonearm-counterweight"></div>
+                    <div class="tonearm-pivot"></div>
+                    <div class="tonearm-rod"></div>
+                    <div class="tonearm-curve"></div>
+                    <div class="tonearm-head"></div>
                 </div>
-            </div>
 
-            <!-- 唱片托盘区域 -->
-            <div class="platter">
-                <div class="vinyl-record">
-                    <div class="vinyl-label"></div>
+                <div class="platter">
+                    <div class="vinyl-record">
+                        <div class="vinyl-label"></div>
+                    </div>
+                    <div class="spindle"></div>
                 </div>
-                <!-- 独立的主轴，压在唱片上方 -->
-                <div class="spindle"></div>
-            </div>
 
-            <!-- 雕刻铭牌信息 -->
-            <div class="info-plate">
-                <h1 class="song-title">橄榄树</h1>
-                <div class="artist">演唱：齐豫 | 作词：三毛</div>
+                <!-- 磨砂玻璃铭牌与示波器 -->
+                <div class="info-plate">
+                    <h1 class="song-title">橄榄树</h1>
+                    <div class="artist">演唱：齐豫 | 作词：三毛</div>
+                    
+                    <div class="wave-container">
+                        <canvas id="wave-canvas" width="240" height="35"></canvas>
+                    </div>
+                </div>
+                
+                <div class="status-light">
+                    <div class="led"></div>
+                    <!-- 文本默认暂停时不显示 -->
+                    <span class="status-light-text" id="status-text"></span>
+                </div>
+                
+                <button id="play-btn" class="action-btn" onclick="toggleMusic(event)">播 放</button>
+
+                <audio id="bg-music" loop>
+                    <source src="ganlanshu-qiyu.mp3" type="audio/mpeg">
+                </audio>
             </div>
             
-            <!-- 指示灯与控制器 -->
-            <div class="status-light">
-                <div class="led"></div>
-                <span class="status-light-text" id="status-text">唱机已就绪</span>
+            <!-- 唱机底部持续的柔和波纹 -->
+            <div class="ripple-container">
+                <div class="ripple"></div>
+                <div class="ripple"></div>
+                <div class="ripple"></div>
             </div>
-            
-            <button id="play-btn" class="action-btn" onclick="toggleMusic()">播放</button>
-
-            <!-- 音频元素 (不可见) -->
-            <audio id="bg-music" loop>
-                <source src="ganlanshu-qiyu.mp3" type="audio/mpeg">
-                您的浏览器不支持音频播放。
-            </audio>
         </div>
     </div>
 
     <script>
-        // --- 音乐控制逻辑 ---
+        let isPlaying = false;
         const audio = document.getElementById('bg-music');
         const statusText = document.getElementById('status-text');
         const playBtn = document.getElementById('play-btn');
         const turntable = document.getElementById('turntable');
-        let isPlaying = false;
 
-        // 设置播放状态UI
+        // --- 交互优化：文本根据要求修改 ---
         function setPlayingState(playing) {
             isPlaying = playing;
             if (playing) {
                 turntable.classList.add('is-playing');
-                statusText.innerText = "正在播放...";
-                playBtn.innerText = "暂停";
+                statusText.innerText = "播放中...";
+                playBtn.innerText = "暂 停";
             } else {
                 turntable.classList.remove('is-playing');
-                statusText.innerText = "唱机已暂停";
-                playBtn.innerText = "播放";
+                statusText.innerText = "";
+                playBtn.innerText = "播 放";
             }
         }
 
-        // 手动点击切换播放/暂停
-        function toggleMusic() {
+        function toggleMusic(e) {
+            if(e) e.stopPropagation(); // 阻止波纹事件触发
             if (isPlaying) {
                 audio.pause();
                 setPlayingState(false);
             } else {
-                audio.play().then(() => {
+                audio.play().then(() => setPlayingState(true)).catch(e => {
                     setPlayingState(true);
-                }).catch(e => {
-                    console.error("播放失败:", e);
-                    alert("无法播放音频，请检查文件是否存在。");
                 });
             }
         }
 
-        // 页面加载完成后尝试自动播放
-        window.onload = () => {
+        // --- 交互波纹引擎 (鼠标点击 / 触屏生成水波纹) ---
+        function createClickRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.classList.add('interactive-ripple');
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            document.body.appendChild(ripple);
+            
+            // 动画结束后移除 DOM，避免性能问题
             setTimeout(() => {
-                audio.play().then(() => {
-                    setPlayingState(true);
-                }).catch((error) => {
-                    console.log("自动播放被浏览器拦截，等待用户点击:", error);
-                    setPlayingState(false);
-                    statusText.innerText = "等待驱动，请点击按键";
-                });
-            }, 800); 
-        };
+                ripple.remove();
+            }, 2500);
+        }
 
-        // --- 粒子特效逻辑 (Canvas) ---
-        const canvas = document.getElementById('particle-canvas');
-        const ctx = canvas.getContext('2d');
-        let particlesArray = [];
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initParticles();
+        // 监听全局点击事件
+        window.addEventListener('click', (e) => {
+            // 防止点击按钮时出现过多重叠
+            if (e.target.id !== 'play-btn') {
+                createClickRipple(e.clientX, e.clientY);
+            }
         });
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = -(Math.random() * 0.4 + 0.1); // 放慢粒子上升速度，更显沉静
-                this.color = `rgba(212, 175, 55, ${Math.random() * 0.4})`; 
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                
-                if (this.y + this.size < 0) {
-                    this.y = canvas.height + this.size;
-                    this.x = Math.random() * canvas.width;
+        // 监听移动端触摸事件
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.id !== 'play-btn') {
+                for(let i = 0; i < e.touches.length; i++) {
+                    createClickRipple(e.touches[i].clientX, e.touches[i].clientY);
                 }
             }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+        });
 
-        function initParticles() {
-            particlesArray = [];
-            const numberOfParticles = (canvas.width * canvas.height) / 7000;
-            for (let i = 0; i < numberOfParticles; i++) {
-                particlesArray.push(new Particle());
-            }
-        }
+        // --- 3D 悬浮交互 ---
+        const scene = document.getElementById('scene-container');
+        const wrapper = document.getElementById('turntable-wrapper');
+        scene.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 60; 
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 60;
+            wrapper.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+        scene.addEventListener('mouseleave', () => {
+            wrapper.style.transition = 'transform 0.8s ease';
+            wrapper.style.transform = `rotateY(0deg) rotateX(0deg)`;
+            setTimeout(() => wrapper.style.transition = 'transform 0.1s ease-out', 800);
+        });
 
-        function animateParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < particlesArray.length; i++) {
-                particlesArray[i].update();
-                particlesArray[i].draw();
-            }
-            requestAnimationFrame(animateParticles);
-        }
+        // --- 优雅版示波器 ---
+        const waveCanvas = document.getElementById('wave-canvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        let waveTime = 0;
+        let currentAmp = 0;
 
-        initParticles();
-        animateParticles();
+        function drawWaveform() {
+            waveCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+            
+            const targetAmp = isPlaying ? 8 : 0.5; 
+            currentAmp += (targetAmp - currentAmp) * 0.05;
+
+            waveCtx.beginPath();
+            waveCtx.moveTo(0, waveCanvas.height / 2);
+
+            for (let x = 0; x < waveCanvas.width; x++) {
+                let y = Math.sin(x * 0.03 + waveTime) * currentAmp;
+                y += Math.sin(x * 0.05 - waveTime * 0.8) * (currentAmp * 0.5);
+                
+                if (isPlaying) {
+                    y += (Math.random() - 0.5) * 0.4;
+                }
+
+                const edgeDamping = Math.sin((x / waveCanvas.width) * Math.PI);
+                y *= edgeDamping;
+
+                waveCtx.lineTo(x, waveCanvas.height / 2 + y);
+            }
+
+            // 香槟金色线条
+            waveCtx.strokeStyle = 'rgba(216, 206, 179, 0.8)'; 
+            waveCtx.lineWidth = 1; 
+            waveCtx.shadowBlur = 5;
+            waveCtx.shadowColor = 'rgba(216, 206, 179, 0.5)';
+            waveCtx.stroke();
+            
+            waveCtx.shadowBlur = 0; 
+            waveTime += 0.03; 
+            requestAnimationFrame(drawWaveform);
+        }
+        drawWaveform(); 
+
     </script>
 </body>
 </html>
