@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《橄榄树》- 齐豫 | 典藏黑胶唱机</title>
+    <style>
+        /* 全局样式与重置 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #08080a;
+            font-family: "STSong", "SimSun", "Times New Roman", serif;
+            color: #f4ecd8;
+        }
+
+        /* 背景画布 */
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 居中主容器 */
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 40%, rgba(50, 42, 35, 0.7) 0%, rgba(10, 10, 12, 1) 90%);
+        }
+
+        /* --- 拟物化唱机底座 --- */
+        .turntable-deck {
+            position: relative;
+            background: linear-gradient(145deg, #2a2723, #141311);
+            border-radius: 12px;
+            padding: 35px 30px 45px 30px;
+            border: 1px solid #3a362f;
+            border-top-color: #4f4a41;
+            box-shadow: 
+                0 30px 60px rgba(0,0,0,0.9),
+                inset 0 1px 2px rgba(255,255,255,0.1),
+                inset 0 -5px 15px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 320px;
+        }
+
+        /* 唱机金属边缘装饰 */
+        .turntable-deck::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px solid rgba(212, 175, 55, 0.15); /* 暗金色内边框 */
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        /* --- 唱片托盘与黑胶 --- */
+        .platter {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1f1f1f, #0a0a0a);
+            box-shadow: 
+                0 15px 25px rgba(0,0,0,0.8), 
+                inset 0 2px 4px rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            margin-top: 10px;
+        }
+
+        /* 黑胶唱片本体 (带凹槽纹理) */
+        .vinyl-record {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background-color: #050505;
+            background-image: repeating-radial-gradient(
+                circle at center,
+                #111 0,
+                #111 1px,
+                #050505 2px,
+                #050505 4px
+            );
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: spin 6s linear infinite;
+            animation-play-state: paused;
+        }
+
+        /* 黑胶高光反射层 */
+        .vinyl-record::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 30deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.15) 10%, 
+                rgba(255,255,255,0) 25%, 
+                rgba(255,255,255,0) 50%, 
+                rgba(255,255,255,0.15) 60%, 
+                rgba(255,255,255,0) 75%
+            );
+            pointer-events: none;
+        }
+
+        /* 专辑封面标签 */
+        .vinyl-label {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-image: url('2727510fd9f9d72a76ced868d42a2834359bbb8c.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #1a1a1a;
+            box-shadow: 0 0 0 3px #000;
+            z-index: 2;
+        }
+
+        /* 中心金属主轴 */
+        .spindle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle at 4px 4px, #f0f0f0, #999, #444);
+            border-radius: 50%;
+            box-shadow: 
+                3px 3px 6px rgba(0,0,0,0.8),
+                inset 0 -1px 2px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- 拟物化唱臂与指针 --- */
+        .tonearm-container {
+            position: absolute;
+            top: 35px;
+            right: 15px;
+            width: 80px;
+            height: 220px;
+            transform-origin: 40px 40px; /* 旋转轴心点在基座中心 */
+            transform: rotate(-35deg); /* 默认暂停时抬起并在最外侧 */
+            transition: transform 0.8s cubic-bezier(0.5, 0, 0.2, 1); 
+            z-index: 10;
+        }
+
+        /* 底部巨大轴承基座 */
+        .tonearm-base {
+            position: absolute;
+            top: 10px; left: 10px;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 20px 20px, #444, #1a1a1a);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.8),
+                inset 0 2px 3px rgba(255,255,255,0.1);
+        }
+
+        /* 上层黄铜旋转轴心 */
+        .tonearm-pivot {
+            position: absolute;
+            top: 22px; left: 22px;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e8c678, #8a7323, #4a3d13);
+            box-shadow: 
+                0 4px 8px rgba(0,0,0,0.8),
+                inset 0 1px 2px rgba(255,255,255,0.6);
+        }
+
+        /* 尾部金属配重锤 */
+        .tonearm-counterweight {
+            position: absolute;
+            top: -12px; left: 30px;
+            width: 20px; height: 35px;
+            background: linear-gradient(90deg, #ccc, #fff, #888, #444);
+            border-radius: 3px;
+            box-shadow: 5px 15px 15px rgba(0,0,0,0.6);
+        }
+
+        /* 修长的主唱臂杆 */
+        .tonearm-rod {
+            position: absolute;
+            top: 40px; left: 36px;
+            width: 8px; height: 140px;
+            background: linear-gradient(90deg, #b0b0b0, #ffffff, #666666);
+            border-radius: 4px;
+            box-shadow: 10px 10px 15px rgba(0,0,0,0.6);
+        }
+
+        /* 弯曲连接处 (视觉过渡) */
+        .tonearm-curve {
+            position: absolute;
+            top: 175px; left: 33px;
+            width: 14px; height: 18px;
+            background: linear-gradient(135deg, #555, #222);
+            border-radius: 2px;
+            transform: rotate(20deg);
+            box-shadow: 6px 6px 10px rgba(0,0,0,0.5);
+        }
+
+        /* 唱头与唱针 */
+        .tonearm-head {
+            position: absolute;
+            top: 188px; left: 21px;
+            width: 20px; height: 36px;
+            background: linear-gradient(145deg, #d4af37, #8a7323); /* 纯金质感唱头 */
+            border-radius: 2px;
+            transform: rotate(20deg);
+            box-shadow: 8px 12px 15px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.4);
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 微型唱针 */
+        .tonearm-stylus {
+            position: absolute;
+            bottom: -3px;
+            width: 4px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 0 0 2px 2px;
+        }
+
+        /* 当播放时的动画状态 */
+        .turntable-deck.is-playing .vinyl-record {
+            animation-play-state: running;
+        }
+
+        .turntable-deck.is-playing .tonearm-container {
+            transform: rotate(12deg); /* 针尖正好落在黑色音轨区域 */
+        }
+
+        /* --- 信息面板与控制器 --- */
+        .info-plate {
+            background: linear-gradient(180deg, #1e1b18, #0f0d0b);
+            border: 1px solid #2e2a25;
+            border-top: 1px solid #111;
+            border-bottom: 1px solid #444;
+            padding: 15px 30px;
+            border-radius: 6px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,1), 0 2px 0 rgba(255,255,255,0.05);
+            text-align: center;
+            width: 85%;
+            margin-bottom: 25px;
+        }
+
+        .song-title {
+            font-size: 22px;
+            letter-spacing: 4px;
+            margin: 0 0 8px 0;
+            color: #e8c678; /* 暗金色 */
+            text-shadow: 0 2px 2px rgba(0,0,0,1);
+            font-weight: normal;
+        }
+
+        .artist {
+            font-size: 14px;
+            color: #8c8173;
+            letter-spacing: 2px;
+            text-shadow: 0 1px 1px rgba(0,0,0,1);
+        }
+
+        /* 状态指示灯 */
+        .status-light {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #330000;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+            transition: all 0.3s;
+        }
+
+        .turntable-deck.is-playing .led {
+            background: #ff3333;
+            box-shadow: 0 0 10px #ff3333, inset 0 1px 2px rgba(255,255,255,0.5);
+        }
+        
+        .turntable-deck.is-playing .status-light-text {
+            color: #a0a0a0;
+        }
+
+        /* 拟物金属按钮 */
+        .action-btn {
+            background: linear-gradient(180deg, #3a3630, #221f1b);
+            color: #d4af37;
+            border: 1px solid #111;
+            border-top: 1px solid #555;
+            padding: 12px 40px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+            letter-spacing: 3px;
+            cursor: pointer;
+            box-shadow: 
+                0 6px 10px rgba(0,0,0,0.8),
+                inset 0 1px 2px rgba(255,255,255,0.1);
+            transition: all 0.1s;
+            outline: none;
+        }
+
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: 
+                0 2px 4px rgba(0,0,0,0.8),
+                inset 0 2px 5px rgba(0,0,0,0.6);
+            border-top: 1px solid #222;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 粒子特效画布 -->
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="container">
+        <!-- 唱机总底盘 -->
+        <div class="turntable-deck" id="turntable">
+            
+            <!-- 唱片机指针系统 -->
+            <div class="tonearm-container">
+                <div class="tonearm-base"></div>
+                <div class="tonearm-counterweight"></div>
+                <div class="tonearm-pivot"></div>
+                <div class="tonearm-rod"></div>
+                <div class="tonearm-curve"></div>
+                <div class="tonearm-head">
+                    <div class="tonearm-stylus"></div>
+                </div>
+            </div>
+
+            <!-- 唱片托盘区域 -->
+            <div class="platter">
+                <div class="vinyl-record">
+                    <div class="vinyl-label"></div>
+                </div>
+                <!-- 独立的主轴，压在唱片上方 -->
+                <div class="spindle"></div>
+            </div>
+
+            <!-- 雕刻铭牌信息 -->
+            <div class="info-plate">
+                <h1 class="song-title">橄榄树</h1>
+                <div class="artist">演唱：齐豫 | 经典压盘</div>
+            </div>
+            
+            <!-- 指示灯与控制器 -->
+            <div class="status-light">
+                <div class="led"></div>
+                <span class="status-light-text" id="status-text">唱机已就绪</span>
+            </div>
+            
+            <button id="play-btn" class="action-btn" onclick="toggleMusic()">播放</button>
+
+            <!-- 音频元素 (不可见) -->
+            <audio id="bg-music" loop>
+                <source src="ganlanshu-qiyu.mp3" type="audio/mpeg">
+                您的浏览器不支持音频播放。
+            </audio>
+        </div>
+    </div>
+
+    <script>
+        // --- 音乐控制逻辑 ---
+        const audio = document.getElementById('bg-music');
+        const statusText = document.getElementById('status-text');
+        const playBtn = document.getElementById('play-btn');
+        const turntable = document.getElementById('turntable');
+        let isPlaying = false;
+
+        // 设置播放状态UI
+        function setPlayingState(playing) {
+            isPlaying = playing;
+            if (playing) {
+                turntable.classList.add('is-playing');
+                statusText.innerText = "正在播放...";
+                playBtn.innerText = "暂停";
+            } else {
+                turntable.classList.remove('is-playing');
+                statusText.innerText = "唱机已暂停";
+                playBtn.innerText = "播放";
+            }
+        }
+
+        // 手动点击切换播放/暂停
+        function toggleMusic() {
+            if (isPlaying) {
+                audio.pause();
+                setPlayingState(false);
+            } else {
+                audio.play().then(() => {
+                    setPlayingState(true);
+                }).catch(e => {
+                    console.error("播放失败:", e);
+                    alert("无法播放音频，请检查文件是否存在。");
+                });
+            }
+        }
+
+        // 页面加载完成后尝试自动播放
+        window.onload = () => {
+            setTimeout(() => {
+                audio.play().then(() => {
+                    setPlayingState(true);
+                }).catch((error) => {
+                    console.log("自动播放被浏览器拦截，等待用户点击:", error);
+                    setPlayingState(false);
+                    statusText.innerText = "等待驱动，请点击按键";
+                });
+            }, 800); 
+        };
+
+        // --- 粒子特效逻辑 (Canvas) ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particlesArray = [];
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = -(Math.random() * 0.4 + 0.1); // 放慢粒子上升速度，更显沉静
+                this.color = `rgba(212, 175, 55, ${Math.random() * 0.4})`; 
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                if (this.y + this.size < 0) {
+                    this.y = canvas.height + this.size;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            const numberOfParticles = (canvas.width * canvas.height) / 7000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+    </script>
+</body>
+</html>
